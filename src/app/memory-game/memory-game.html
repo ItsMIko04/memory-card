@@ -4,11 +4,15 @@
   <div class="scoreboard">
     @if (gameStarted && !gameWon) {
       <div class="status-info">
-        <p>Tempo rimasto: <strong [class.urgent]="timeLeft() <= 10">{{ timeLeft() }}s</strong></p>
+        <p>Tempo rimasto: <strong [class.urgent]="timeLeft() <= 15">{{ timeLeft() }}s</strong></p>
         <p>Mosse effettuate: <strong>{{ moves }}</strong></p>
       </div>
     } @else if (!gameStarted && !gameWon) {
-      <p class="welcome-text">Pronto alla sfida? Hai a disposizione 60 secondi!</p>
+      <p class="welcome-text">Pronto alla sfida? Hai a disposizione 120 secondi!</p>
+      
+      @if (bestStats) {
+        <p class="best-score-badge">👑 Record attuale: {{ bestStats.moves }} mosse in {{ bestStats.timeSpent }}s</p>
+      }
     }
     
     <button class="btn-action" (click)="startGame()">
@@ -20,8 +24,15 @@
     <div class="stats-box">
       <h2>🏆 COMPLIMENTI, HAI VINTO! 🏆</h2>
       <div class="stats-details">
+        <h3>Partita Attuale:</h3>
         <p>⏱️ Tempo impiegato: <strong>{{ victoryStats.timeSpent }} secondi</strong></p>
         <p>🎯 Mosse totali: <strong>{{ victoryStats.moves }}</strong></p>
+        
+        @if (bestStats) {
+          <hr>
+          <h3>👑 Il tuo Record Assoluto:</h3>
+          <p>Miglior tempo: <strong>{{ bestStats.timeSpent }}s</strong> | Minor numero di mosse: <strong>{{ bestStats.moves }}</strong></p>
+        }
       </div>
       <button class="btn-replay" (click)="startGame()">Gioca Ancora 🔄</button>
     </div>

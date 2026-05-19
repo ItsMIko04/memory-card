@@ -7,6 +7,11 @@ interface Card {
   isMatched: boolean;
 }
 
+interface Stats {
+  moves: number;
+  timeSpent: number;
+}
+
 @Component({
   selector: 'app-memory-game',
   standalone: true,
@@ -22,19 +27,23 @@ export class MemoryGame implements OnInit, OnDestroy {
   moves = 0;
   matches = 0;
 
-  readonly INITIAL_TIME = 60; 
+  // 🔥 MODIFICATO: Tempo iniziale portato a 120 secondi
+  readonly INITIAL_TIME = 120; 
   timeLeft = signal(this.INITIAL_TIME);
   timerInterval: any = null;
 
   gameStarted = false;
   gameWon = false;
-  victoryStats: { moves: number; timeSpent: number } | null = null;
+  
+  victoryStats: Stats | null = null;
+  // Variabile per memorizzare il miglior punteggio di sempre
+  bestStats: Stats | null = null;
 
-  // Iniettiamo ChangeDetectorRef nel costruttore
   constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
     this.prepareDeck(); 
+    this.loadBestStats(); // Carica il record precedente all'avvio
   }
 
   ngOnDestroy() {
@@ -56,6 +65,7 @@ export class MemoryGame implements OnInit, OnDestroy {
   startGame() {
     this.stopTimer(); 
     this.prepareDeck();
+    this.loadBestStats(); // Rinfresca il record visivo
     
     this.timeLeft.set(this.INITIAL_TIME);
     this.moves = 0;
@@ -68,15 +78,12 @@ export class MemoryGame implements OnInit, OnDestroy {
     this.gameStarted = true;
 
     this.startTimer();
-    this.cdr.detectChanges(); // Aggiornamento iniziale dello schermo
+    this.cdr.detectChanges();
   }
 
   startTimer() {
     this.timerInterval = setInterval(() => {
-      // Sottrae 1 al contatore
       this.timeLeft.update(time => time - 1);
-
-      // 🔥 FORZATURA: Dice ad Angular di aggiornare l'HTML ADESSO
       this.cdr.detectChanges(); 
 
       if (this.timeLeft() <= 0) {
@@ -114,7 +121,7 @@ export class MemoryGame implements OnInit, OnDestroy {
       this.moves++;
       this.checkMatch();
     }
-    this.cdr.detectChanges(); // Aggiorna i click visivamente
+    this.cdr.detectChanges();
   }
 
   checkMatch() {
@@ -137,6 +144,9 @@ export class MemoryGame implements OnInit, OnDestroy {
           moves: this.moves,
           timeSpent: timeSpent
         };
+
+        // 🔥 SALVATAGGIO DEL RECORD
+        this.saveStats(this.victoryStats);
       }
       this.cdr.detectChanges();
     } else {
@@ -148,6 +158,31 @@ export class MemoryGame implements OnInit, OnDestroy {
         this.lockBoard = false;
         this.cdr.detectChanges();
       }, 1000);
+    }
+  }
+
+  // 🔥 Metodo per salvare le statistiche e verificare se è un nuovo record
+  saveStats(currentStats: Stats) {
+    const saved = localStorage.getItem('memory_best_stats');
+    
+    if (!saved) {
+      // Se non esiste nessun record, questo è il primo e diventa il migliore
+      localStorage.setItem('memory_best_stats', JSON.stringify(currentStats));
+    } else {
+      const oldBest: Stats = JSON.parse(saved);
+      // È un nuovo record se ha fatto meno mosse, o a parità di mosse se ci ha messo meno tempo
+      if (currentStats.moves < oldBest.moves || (currentStats.moves === oldBest.moves && currentStats.timeSpent < oldBest.timeSpent)) {
+        localStorage.setItem('memory_best_stats', JSON.stringify(currentStats));
+      }
+    }
+    this.loadBestStats();
+  }
+
+  // 🔥 Metodo per leggere il record dal browser
+  loadBestStats() {
+    const saved = localStorage.getItem('memory_best_stats');
+    if (saved) {
+      this.bestStats = JSON.parse(saved);
     }
   }
 }
