@@ -1,4 +1,6 @@
-import { Component, OnInit, OnDestroy, signal, ChangeDetectorRef } from '@angular/core';
+// 1. Aggiungi gli import 'PLATFORM_ID' e 'inject' da @angular/core, e 'isPlatformBrowser' da @angular/common
+import { Component, OnInit, OnDestroy, signal, ChangeDetectorRef, PLATFORM_ID, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 interface Card {
   id: number;
@@ -20,6 +22,9 @@ interface Stats {
   styleUrls: ['./memory-game.css']
 })
 export class MemoryGame implements OnInit, OnDestroy {
+  // 2. Recuperiamo l'identificativo della piattaforma (Server o Browser)
+  private platformId = inject(PLATFORM_ID);
+
   cardIcons = ['🦊', '🐰', '🦁', '🐸', '🐵', '🦉', '🐝', '🦖'];
   cards: Card[] = [];
   flippedCards: Card[] = [];
@@ -27,7 +32,6 @@ export class MemoryGame implements OnInit, OnDestroy {
   moves = 0;
   matches = 0;
 
-  // 🔥 MODIFICATO: Tempo iniziale portato a 120 secondi
   readonly INITIAL_TIME = 120; 
   timeLeft = signal(this.INITIAL_TIME);
   timerInterval: any = null;
@@ -36,14 +40,13 @@ export class MemoryGame implements OnInit, OnDestroy {
   gameWon = false;
   
   victoryStats: Stats | null = null;
-  // Variabile per memorizzare il miglior punteggio di sempre
   bestStats: Stats | null = null;
 
   constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
     this.prepareDeck(); 
-    this.loadBestStats(); // Carica il record precedente all'avvio
+    this.loadBestStats(); 
   }
 
   ngOnDestroy() {
@@ -65,7 +68,7 @@ export class MemoryGame implements OnInit, OnDestroy {
   startGame() {
     this.stopTimer(); 
     this.prepareDeck();
-    this.loadBestStats(); // Rinfresca il record visivo
+    this.loadBestStats(); 
     
     this.timeLeft.set(this.INITIAL_TIME);
     this.moves = 0;
@@ -145,7 +148,6 @@ export class MemoryGame implements OnInit, OnDestroy {
           timeSpent: timeSpent
         };
 
-        // 🔥 SALVATAGGIO DEL RECORD
         this.saveStats(this.victoryStats);
       }
       this.cdr.detectChanges();
@@ -161,28 +163,30 @@ export class MemoryGame implements OnInit, OnDestroy {
     }
   }
 
-  // 🔥 Metodo per salvare le statistiche e verificare se è un nuovo record
+  // 3. MODIFICATO: Controlla se siamo nel browser prima di salvare
   saveStats(currentStats: Stats) {
-    const saved = localStorage.getItem('memory_best_stats');
-    
-    if (!saved) {
-      // Se non esiste nessun record, questo è il primo e diventa il migliore
-      localStorage.setItem('memory_best_stats', JSON.stringify(currentStats));
-    } else {
-      const oldBest: Stats = JSON.parse(saved);
-      // È un nuovo record se ha fatto meno mosse, o a parità di mosse se ci ha messo meno tempo
-      if (currentStats.moves < oldBest.moves || (currentStats.moves === oldBest.moves && currentStats.timeSpent < oldBest.timeSpent)) {
+    if (isPlatformBrowser(this.platformId)) {
+      const saved = localStorage.getItem('memory_best_stats');
+      
+      if (!saved) {
         localStorage.setItem('memory_best_stats', JSON.stringify(currentStats));
+      } else {
+        const oldBest: Stats = JSON.parse(saved);
+        if (currentStats.moves < oldBest.moves || (currentStats.moves === oldBest.moves && currentStats.timeSpent < oldBest.timeSpent)) {
+          localStorage.setItem('memory_best_stats', JSON.stringify(currentStats));
+        }
       }
+      this.loadBestStats();
     }
-    this.loadBestStats();
   }
 
-  // 🔥 Metodo per leggere il record dal browser
+  // 4. MODIFICATO: Controlla se siamo nel browser prima di leggere
   loadBestStats() {
-    const saved = localStorage.getItem('memory_best_stats');
-    if (saved) {
-      this.bestStats = JSON.parse(saved);
+    if (isPlatformBrowser(this.platformId)) {
+      const saved = localStorage.getItem('memory_best_stats');
+      if (saved) {
+        this.bestStats = JSON.parse(saved);
+      }
     }
   }
 }
