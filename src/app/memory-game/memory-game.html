@@ -1,0 +1,44 @@
+<div class="game-container">
+  <h1>Memory Game 🧠</h1>
+  
+  <div class="scoreboard">
+    @if (gameStarted && !gameWon) {
+      <div class="status-info">
+        <p>Tempo rimasto: <strong [class.urgent]="timeLeft() <= 10">{{ timeLeft() }}s</strong></p>
+        <p>Mosse effettuate: <strong>{{ moves }}</strong></p>
+      </div>
+    } @else if (!gameStarted && !gameWon) {
+      <p class="welcome-text">Pronto alla sfida? Hai a disposizione 60 secondi!</p>
+    }
+    
+    <button class="btn-action" (click)="startGame()">
+      {{ gameStarted ? 'Riavvia Gioco 🔄' : 'Inizia Gioco ▶️' }}
+    </button>
+  </div>
+
+  @if (gameWon && victoryStats) {
+    <div class="stats-box">
+      <h2>🏆 COMPLIMENTI, HAI VINTO! 🏆</h2>
+      <div class="stats-details">
+        <p>⏱️ Tempo impiegato: <strong>{{ victoryStats.timeSpent }} secondi</strong></p>
+        <p>🎯 Mosse totali: <strong>{{ victoryStats.moves }}</strong></p>
+      </div>
+      <button class="btn-replay" (click)="startGame()">Gioca Ancora 🔄</button>
+    </div>
+  } @else {
+    <div class="grid" [class.disabled-grid]="!gameStarted">
+      @for (card of cards; track card.id) {
+        <div 
+          class="card" 
+          [class.flipped]="card.isFlipped || card.isMatched"
+          (click)="cardClicked(card)">
+          
+          <div class="card-inner">
+            <div class="card-front">✨</div>
+            <div class="card-back">{{ card.value }}</div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
